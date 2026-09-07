@@ -1,5 +1,6 @@
 import asyncio
-from execution_agent import ExecutionAgent
+from my_agent.src.execution_agent import ExecutionAgent
+from my_agent.src.logger import log_info, log_warning, log_error
 
 class TradingStrategyEngine:
     def __init__(self, execution_agent: ExecutionAgent):

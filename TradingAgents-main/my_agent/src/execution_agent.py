@@ -1,6 +1,6 @@
 import asyncio
 from ib_async import *
-from logger import log_info, log_warning, log_error, log_performance
+from my_agent.src.logger import log_info, log_warning, log_error, log_performance
 
 class ExecutionAgent:
     def __init__(self, host='127.0.0.1', port=7497, client_id=2, max_quantity_per_order=100):
