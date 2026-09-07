@@ -1,5 +1,5 @@
 import asyncio
-from execution_agent import ExecutionAgent
+from my_agent.src.execution_agent import ExecutionAgent
 
 async def main():
     # Inicializálás max. 100 db-os megbízási limit-tel
