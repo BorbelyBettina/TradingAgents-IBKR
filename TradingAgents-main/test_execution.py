@@ -6,6 +6,11 @@ async def main():
     try:
         # 1. Számlaadatok ellenőrzése
         summary = await agent.get_account_summary()
+        # Pozíciók ellenőrzése
+        positions = await agent.get_positions()
+        print("\n--- JELENLEGI POZÍCIÓK ---")
+        for pos in positions:
+            print(f" - {pos['symbol']}: {pos['position']} db (Átlagár: {pos['avg_cost']} USD)")
         print("\n--- SZÁMLA ÖSSZEGZÉS ---")
         for key, val in summary.items():
             print(f" - {key}: {val} USD")

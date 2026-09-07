@@ -20,6 +20,18 @@ class ExecutionAgent:
             self.ib.disconnect()
             print("[ExecutionAgent] Kapcsolat bontva.")
 
+    async def get_positions(self):
+        """A számlán meglévő nyitott pozíciók lekérdezése."""
+        await self.connect()
+        positions = await self.ib.reqPositionsAsync()
+        pos_list = []
+        for p in positions:
+            pos_list.append({
+                'symbol': p.contract.symbol,
+                'position': p.position,
+                'avg_cost': p.avgCost
+            })
+        return pos_list
     async def get_account_summary(self):
         """Számlaegyenleg és szabad tőke lekérdezése."""
         await self.connect()
