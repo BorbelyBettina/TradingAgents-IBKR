@@ -2,10 +2,11 @@ import asyncio
 from ib_async import *
 
 class ExecutionAgent:
-    def __init__(self, host='127.0.0.1', port=7497, client_id=2):
+    def __init__(self, host='127.0.0.1', port=7497, client_id=2, max_quantity_per_order=100):
         self.host = host
         self.port = port
         self.client_id = client_id
+        self.max_quantity_per_order = max_quantity_per_order
         self.ib = IB()
 
     async def connect(self):
@@ -32,6 +33,7 @@ class ExecutionAgent:
                 'avg_cost': p.avgCost
             })
         return pos_list
+
     async def get_account_summary(self):
         """Számlaegyenleg és szabad tőke lekérdezése."""
         await self.connect()
@@ -44,7 +46,7 @@ class ExecutionAgent:
 
     async def execute_order(self, symbol: str, action: str, quantity: int, order_type: str = 'MKT', limit_price: float = None):
         """
-        Megbízás végrehajtása.
+        Megbízás ellenőrzése és végrehajtása kockázatkezelési szabályokkal.
         
         :param symbol: Részvény ticker (pl. 'AAPL')
         :param action: 'BUY' vagy 'SELL'
@@ -53,6 +55,11 @@ class ExecutionAgent:
         :param limit_price: Limit ár (ha nincs megadva, automatikusan lekéri az utolsó árat)
         """
         await self.connect()
+
+        # --- KOCKÁZATKEZELÉS 1: Maximális darabszám ellenőrzése ---
+        if quantity > self.max_quantity_per_order:
+            print(f"[Risk Check REJECTED] A kért mennyiség ({quantity} db) meghaladja a megengedett limitet ({self.max_quantity_per_order} db)!")
+            return None
 
         contract = Stock(symbol, 'SMART', 'USD')
         await self.ib.qualifyContractsAsync(contract)
@@ -75,6 +82,16 @@ class ExecutionAgent:
             limit_price = round(price, 2)
             order_type = 'LMT'
             print(f"[ExecutionAgent] Nyitvatartáson kívüli megbízás LMT típusra módosítva ({limit_price} USD áron).")
+
+        # --- KOCKÁZATKEZELÉS 2: Szabad tőke ellenőrzése vétel esetén ---
+        if action.upper() == 'BUY':
+            summary = await self.get_account_summary()
+            available_cash = summary.get('TotalCashValue', 0.0)
+            estimated_cost = quantity * (limit_price if limit_price else 0.0)
+
+            if estimated_cost > available_cash:
+                print(f"[Risk Check REJECTED] Nincs elegendő fedezet! Szükséges: {estimated_cost:.2f} USD, Elérhető: {available_cash:.2f} USD.")
+                return None
 
         # Megbízás objektum összeállítása
         if order_type.upper() == 'LMT':
