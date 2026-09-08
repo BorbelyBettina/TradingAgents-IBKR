@@ -40,13 +40,23 @@ class ExecutionAgent:
         return pos_list
 
     async def get_account_summary(self):
-        """Számlaegyenleg és szabad tőke lekérdezése."""
+        """Számlaegyenleg és szabad tőke lekérdezése az IBKR-től."""
         await self.connect()
         summary = await self.ib.accountSummaryAsync()
         account_data = {}
+        
         for item in summary:
-            if item.tag in ['TotalCashValue', 'BuyingPower', 'NetLiquidation']:
+            if item.tag in ['TotalCashValue', 'BuyingPower', 'NetLiquidation', 'SettledCash']:
                 account_data[item.tag] = float(item.value)
+
+        # Készpénzegyenleg kulcs egységesítése a főciklus és naplózás számára
+        if 'TotalCashValue' in account_data:
+            account_data['TotalCashBalance'] = account_data['TotalCashValue']
+        elif 'SettledCash' in account_data:
+            account_data['TotalCashBalance'] = account_data['SettledCash']
+        else:
+            account_data['TotalCashBalance'] = 0.0
+
         return account_data
 
     async def record_daily_metrics(self):
@@ -54,7 +64,7 @@ class ExecutionAgent:
         summary = await self.get_account_summary()
         positions = await self.get_positions()
         
-        cash = summary.get('TotalCashValue', 0.0)
+        cash = summary.get('TotalCashBalance', 0.0)
         net_liq = summary.get('NetLiquidation', 0.0)
         pos_count = len(positions)
         
@@ -93,7 +103,7 @@ class ExecutionAgent:
         # KOCKÁZATKEZELÉS 2: Fedezet
         if action.upper() == 'BUY':
             summary = await self.get_account_summary()
-            available_cash = summary.get('TotalCashValue', 0.0)
+            available_cash = summary.get('TotalCashBalance', 0.0)
             estimated_cost = quantity * (limit_price if limit_price else 0.0)
 
             if estimated_cost > available_cash:
