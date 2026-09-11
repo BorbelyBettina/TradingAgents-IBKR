@@ -51,9 +51,19 @@ class ConditionalLogic:
 
     def should_continue_debate(self, state: AgentState) -> str:
         """Determine if debate should continue."""
+        rounds_raw = self.max_debate_rounds
+        if rounds_raw == "shallow":
+            max_rounds = 1
+        elif rounds_raw == "deep":
+            max_rounds = 3
+        else:
+            try:
+                max_rounds = int(rounds_raw)
+            except (TypeError, ValueError):
+                max_rounds = 3
 
         if (
-            state["investment_debate_state"]["count"] >= 2 * self.max_debate_rounds
+            int(state["investment_debate_state"]["count"]) >= 2 * max_rounds
         ):  # 3 rounds of back-and-forth between 2 agents
             return "Research Manager"
         if state["investment_debate_state"]["current_response"].startswith("Bull"):
@@ -62,8 +72,19 @@ class ConditionalLogic:
 
     def should_continue_risk_analysis(self, state: AgentState) -> str:
         """Determine if risk analysis should continue."""
+        risk_raw = self.max_risk_discuss_rounds
+        if risk_raw == "shallow":
+            max_risk_rounds = 1
+        elif risk_raw == "deep":
+            max_risk_rounds = 3
+        else:
+            try:
+                max_risk_rounds = int(risk_raw)
+            except (TypeError, ValueError):
+                max_risk_rounds = 3
+
         if (
-            state["risk_debate_state"]["count"] >= 3 * self.max_risk_discuss_rounds
+            int(state["risk_debate_state"]["count"]) >= 3 * max_risk_rounds
         ):  # 3 rounds of back-and-forth between 3 agents
             return "Portfolio Manager"
         if state["risk_debate_state"]["latest_speaker"].startswith("Aggressive"):
