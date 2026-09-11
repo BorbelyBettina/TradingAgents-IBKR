@@ -12,6 +12,7 @@ outcomes (a "Yes" at 0.76 means the market prices a 76% chance).
 import json
 import logging
 from datetime import datetime, timezone
+from requests.exceptions import SSLError, RequestException
 
 import requests
 
@@ -27,11 +28,18 @@ DEFAULT_LIMIT = 6
 
 
 def _request(path: str, params: dict) -> dict:
-    response = requests.get(
-        f"{GAMMA_BASE}/{path}", params=params, timeout=REQUEST_TIMEOUT
-    )
-    response.raise_for_status()
-    return response.json()
+    try:
+        response = requests.get(
+            f"{GAMMA_BASE}/{path}", params=params, timeout=REQUEST_TIMEOUT
+        )
+        response.raise_for_status()
+        return response.json()
+    except SSLError as e:
+        logger.warning("Polymarket SSL hiba a(z) %s útvonalon: %s — üres adattal továbblépés", path, e)
+        return {}
+    except RequestException as e:
+        logger.warning("Polymarket hálózati hiba a(z) %s útvonalon: %s — üres adattal továbblépés", path, e)
+        return {}
 
 
 def _parse_json_list(value) -> list:

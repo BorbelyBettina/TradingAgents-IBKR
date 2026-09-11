@@ -104,7 +104,7 @@ def _strip_html(content: str) -> str:
 
 # Headerless-429 backoff when Reddit gives no Retry-After. Jittered so several
 # analyses sharing an IP don't retry in lockstep and re-collide on the limit.
-_RETRY_FALLBACK_SECONDS = 5.0
+_RETRY_FALLBACK_SECONDS = 15.0
 
 
 def _jitter(seconds: float, frac: float = 0.2) -> float:
